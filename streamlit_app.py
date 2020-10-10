@@ -42,7 +42,6 @@ def extract_csv_from_zip_file(raw_input):
 
 
 user_table, github = get_config()
-# rate_limit = cached_github.get_rate_limit(github)
 # f'rate_limit {type(rate_limit)}
 # st.write(rate_limit)
 # st.write(dir(rate_limit))
@@ -57,7 +56,7 @@ filtered_users = user_table[user_table['Status'] == status]
 filtered_users = filtered_users.sort_values(by='Applied At', ascending=True)
 filtered_users, len(filtered_users)
 results = {'email': [], 'login': [], 'streamlit_files': []}
-MAX_ITER = 20
+MAX_ITER = 200
 st.success(f'Will halt after `{MAX_ITER}` iterations.')
 for i, s4a_user in enumerate(filtered_users.itertuples()):
     s4a_email = s4a_user.Email 
