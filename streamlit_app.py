@@ -47,11 +47,9 @@ user_table, github = get_config()
 # st.write(rate_limit)
 # st.write(dir(rate_limit))
 # st.write(rate_limit.raw_headers)
-# search_limit = rate_limit.search
 # st.write('search_limit', type(search_limit))
 # st.write(dir(search_limit))
 # f'remaining: `{search_limit.remaining}`'
-# f'reset: `{search_limit.reset}`'
 # raise RuntimeError('Stop here.')
 
 status = st.selectbox('Status', list(set(user_table['Status'])))
@@ -59,6 +57,8 @@ filtered_users = user_table[user_table['Status'] == status]
 filtered_users = filtered_users.sort_values(by='Applied At', ascending=True)
 filtered_users, len(filtered_users)
 results = {'email': [], 'login': [], 'streamlit_files': []}
+MAX_ITER = 20
+st.success(f'Will halt after `{MAX_ITER}` iterations.')
 for i, s4a_user in enumerate(filtered_users.itertuples()):
     s4a_email = s4a_user.Email 
     github_user = cached_github.get_user_from_email(github, s4a_email)
@@ -72,12 +72,14 @@ for i, s4a_user in enumerate(filtered_users.itertuples()):
     f'name: `{github_user.name}`'
     f'login: `{github_login}`'
     files = cached_github.get_streamlit_files(github, github_login)
+    if len(files) > 1000:
+        st.write(files)
+        st.write(files[0].download_url)
+        raise RuntimeError('Checking types.')
     f'num files: `{len(files)}`'
     results['email'].append(s4a_email)
     results['login'].append(github_login)
     results['streamlit_files'].append(len(files))
-    if i == 100:
+    if i >= MAX_ITER:
         break
-st.write(results)
 st.write(pd.DataFrame(results))
-

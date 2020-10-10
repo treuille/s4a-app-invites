@@ -2,9 +2,13 @@
 
 import streamlit as st
 import functools
+import math
 import time
+import hashlib
+from datetime import datetime
 from github import Github
 from github import NamedUser
+from github import ContentFile
 from github import RateLimitExceededException
 from github import MainClass as GithubMainClass
 
@@ -18,23 +22,42 @@ def _get_attr_func(attr):
         return getattr(obj, attr)
     return get_attr_func
 
+def _hash_github_object(github):
+    """Special hasher for the github function itself."""
+    # Since we're hashing to desk, we'd don't want to store the raw
+    # access token, instead we store a cryptographically secure (aka salted)
+    # hash of it.
+    hasher = hashlib.sha256()
+    hasher.update(b'streamlit_salt')
+    hasher.update(github._access_token.encode('utf-8'))
+    print(github._access_token, '->', str(hasher.digest()))
+    return hasher.digest()
+
 _GITHUB_HASH_FUNCS = {
-    GithubMainClass.Github: _get_attr_func('_access_token'),
+        GithubMainClass.Github: _hash_github_object, 
     NamedUser.NamedUser: _get_attr_func('login'),
+    ContentFile.ContentFile: _get_attr_func('download_url'),
 }
 
 def rate_limit_search(func):
     """Function decorator to try to handle Github search rate limits.
     See: https://developer.github.com/v3/search/#rate-limit"""
-    WAIT_SECONDS = 60.0
+    MAX_WAIT_SECONDS = 60.0
+
     @functools.wraps(func)
-    def wrapped_func(*args, **kwargs):
+    def wrapped_func(github, *args, **kwargs):
         try:
-            return func(*args, **kwargs)
+            return func(github, *args, **kwargs)
         except RateLimitExceededException:
-            with st.spinner(f'Waiting {WAIT_SECONDS}s to avoid rate limit.'):
-                time.sleep(WAIT_SECONDS)
-        return func(*args, **kwargs)
+            # We were rate limited by Github, Figure out how long to wait.
+            # Round up, and wait that long.
+            search_limit = github.get_rate_limit().search
+            remaining = search_limit.reset - datetime.utcnow()
+            wait_seconds = math.ceil(remaining.total_seconds() + 1.0)
+            wait_seconds = min(wait_seconds, MAX_WAIT_SECONDS)
+            with st.spinner(f'Waiting {wait_seconds}s to avoid rate limit.'):
+                time.sleep(wait_seconds)
+            return func(github, *args, **kwargs)
     return wrapped_func
 
 @st.cache(hash_funcs=_GITHUB_HASH_FUNCS)
