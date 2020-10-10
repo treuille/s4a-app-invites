@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 streamlit = "*"
 pylint = "*"
+pygithub = "*"
 
 [requires]
 python_version = "3.8"
