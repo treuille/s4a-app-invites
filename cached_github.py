@@ -41,10 +41,9 @@ def rate_limited_and_cached(func=None, **st_cache_args):
     MAX_WAIT_SECONDS = 60.0
 
     if func == None:
-        return functools.partial(rate_limited_and_cached, **st_cache_args)
+        return lambda f: rate_limited_and_cached(func=f, **st_cache_args)
 
     @functools.wraps(func)
-    @st.cache(hash_funcs=_GITHUB_HASH_FUNCS, persist=True, **st_cache_args)
     def wrapped_func(github, *args, **kwargs):
         try:
             return func(github, *args, **kwargs)
@@ -58,7 +57,11 @@ def rate_limited_and_cached(func=None, **st_cache_args):
             with st.spinner(f'Waiting {wait_seconds}s to avoid rate limit.'):
                 time.sleep(wait_seconds)
             return func(github, *args, **kwargs)
-    return wrapped_func
+    return st.cache(
+        wrapped_func,
+        hash_funcs=_GITHUB_HASH_FUNCS,
+        persist=True,
+        **st_cache_args)
 
 @rate_limited_and_cached
 def from_access_token(access_token):
