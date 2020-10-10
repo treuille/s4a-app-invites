@@ -37,11 +37,10 @@ def get_user_from_email(github, email):
     else:
         raise RuntimeError(f'{email} associated with {len(users)} users.')
 
-# @st.cache(hash_funcs=_GITHUB_HASH_FUNCS, allow_output_mutation=True)
-def get_streamlit_repos(github, github_login):
-    results = github.search_code(f'user:{github_login} extension:py streamlit')
-    st.write('code results:')
-    st.write(list(results))
-    raise RuntimeError('Nothing.')
+@st.cache(hash_funcs=_GITHUB_HASH_FUNCS)
+def get_streamlit_files(github, github_login):
+    SEARCH_QUERY = 'extension:py "import streamlit as st" user:'
+    files = github.search_code(SEARCH_QUERY + github_login)
+    return list(files)
 
 

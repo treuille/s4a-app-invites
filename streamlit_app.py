@@ -57,7 +57,9 @@ for s4a_user in filtered_users.itertuples():
     f'created_at: `{github_user.created_at}`'
     f'name: `{github_user.name}`'
     f'login: `{github_login}`'
-    rv = cached_github.get_streamlit_repos(github, github_login)
-    'rv', rv
-    raise RuntimeError('Stopping here.')
+    rv = cached_github.get_streamlit_files(github, github_login)
+    f'num repos: `{rv}`'
+    if len(rv) != 0:
+        break
+    # raise RuntimeError('Stopping here.')
 
