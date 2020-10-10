@@ -42,24 +42,42 @@ def extract_csv_from_zip_file(raw_input):
 
 
 user_table, github = get_config()
+# rate_limit = cached_github.get_rate_limit(github)
+# f'rate_limit {type(rate_limit)}
+# st.write(rate_limit)
+# st.write(dir(rate_limit))
+# st.write(rate_limit.raw_headers)
+# search_limit = rate_limit.search
+# st.write('search_limit', type(search_limit))
+# st.write(dir(search_limit))
+# f'remaining: `{search_limit.remaining}`'
+# f'reset: `{search_limit.reset}`'
+# raise RuntimeError('Stop here.')
+
 status = st.selectbox('Status', list(set(user_table['Status'])))
 filtered_users = user_table[user_table['Status'] == status]
 filtered_users = filtered_users.sort_values(by='Applied At', ascending=True)
 filtered_users, len(filtered_users)
-for s4a_user in filtered_users.itertuples():
-    github_user = cached_github.get_user_from_email(github, s4a_user.Email)
-    'type(github_user)', type(github_user)
+results = {'email': [], 'login': [], 'streamlit_files': []}
+for i, s4a_user in enumerate(filtered_users.itertuples()):
+    s4a_email = s4a_user.Email 
+    github_user = cached_github.get_user_from_email(github, s4a_email)
     if not github_user:
         continue
     github_login = github_user.login
+    f'### {i}'
     f'email: `{s4a_user.Email}`'
     f'twitter_username: `{github_user.twitter_username}`'
     f'created_at: `{github_user.created_at}`'
     f'name: `{github_user.name}`'
     f'login: `{github_login}`'
-    rv = cached_github.get_streamlit_files(github, github_login)
-    f'num repos: `{rv}`'
-    if len(rv) != 0:
+    files = cached_github.get_streamlit_files(github, github_login)
+    f'num files: `{len(files)}`'
+    results['email'].append(s4a_email)
+    results['login'].append(github_login)
+    results['streamlit_files'].append(len(files))
+    if i == 100:
         break
-    # raise RuntimeError('Stopping here.')
+st.write(results)
+st.write(pd.DataFrame(results))
 
