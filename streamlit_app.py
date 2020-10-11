@@ -2,6 +2,7 @@ import cached_github
 import streamlit as st
 import pandas as pd
 import zipfile
+import os
 
 "# S4A App Explorer"
 
@@ -16,24 +17,47 @@ def get_config():
     """Returns all the config information to run the app."""
     
     # Get input
-    config = st.sidebar.beta_expander('Config', expanded=True)
-    raw_input = config.file_uploader('User list zip file.', types='zip')
-    access_token = config.text_input("Github access token", type="password")
+    zip_file = get_zip_file()
+    access_token = st.sidebar.text_input("Github access token", type="password")
 
     # Check for input
-    if not raw_input:
+    if not zip_file:
         err('Please upload a user file. Ask TC for the file.')
     if not access_token:
         err('Please enter a github access token.')
 
     # Parse and return the information
-    user_table = extract_csv_from_zip_file(raw_input)
+    user_table = extract_csv_from_zip_file(zip_file)
     github = cached_github.from_access_token(access_token)
     return user_table, github
 
+def get_zip_file():
+    """Return a zip file object, either from the current directory or uploaded."""
+    # This is a sentinal to indicate that we upload a file if either the user
+    # selects to upload manually or if there are no zip files in the current
+    # directory.
+    UPLOAD_FILE = "Upload a zip file"
+
+    # First try to upload a file from the current directory.
+    zip_filenames = [f for f in os.listdir('.') if f.endswith('.zip')]
+    if zip_filenames:
+        # Even if there are local files, give the option to upload.
+        zip_filenames = [UPLOAD_FILE] + zip_filenames
+        zip_filename = st.sidebar.selectbox('Select zip file', zip_filenames)
+    else:
+        # If no local zip files, then you must upload.
+        zip_filename = UPLOAD_FILE
+
+    # Now open the file, either locally or with an uploader.
+    if zip_filename == UPLOAD_FILE:
+        zip_file = st.sidebar.file_uploader('User list zip file.', types='zip')
+    else:
+        zip_file = open(zip_filename, 'rb')
+    return zip_file
+
 # @st.cache
-def extract_csv_from_zip_file(raw_input):
-    with zipfile.ZipFile(raw_input) as zip_input:
+def extract_csv_from_zip_file(zip_file):
+    with zipfile.ZipFile(zip_file) as zip_input:
         names = zip_input.namelist()
         assert len(names) == 1 and names[0].endswith('.csv'), \
             "Zipfile must have only one csv."
