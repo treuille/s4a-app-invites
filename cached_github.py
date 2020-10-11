@@ -86,6 +86,10 @@ def get_streamlit_files(github, github_login):
     except RateLimitExceededException:
         raise
     except GithubException as e:
-        st.write(e) 
-        st.write(dir(e))
-        raise
+        if e.data['message'] == 'Validation Failed':
+            # Then this user changed their permissions, I think.
+            # In any case, we just pretend they have no files.
+            return []
+        else:
+            # In this case, we have no idea what's going on, so just raise again. 
+            raise
