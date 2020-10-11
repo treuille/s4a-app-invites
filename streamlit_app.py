@@ -74,6 +74,35 @@ def filter_user_table(user_table):
         user_table = user_table[user_table.Status != exclude_status]
     return user_table
 
+@st.cache(hash_funcs=cached_github.GITHUB_HASH_FUNCS,
+    suppress_st_warning=True)
+def get_streamlit_files(github, user_table, start_user, end_user):
+    """Turns user_table into a table listing streamlit_files."""
+    # Create the progress bar
+    bar = st.progress(0)
+    status_text = st.empty()
+
+    # Run the map operation over the user table.
+    results = {'email': [], 'login': [], 'streamlit_files': []}
+    for i, s4a_user in enumerate(user_range):
+        # Update the status
+        bar.progress((i + 1) / n_users)
+        status_text.text(f'{i+1} / {n_users} ({(i+1) * 100.0 / n_users : 3.1f}%)')
+
+        # Figure out how many Streamlit files this user has.
+        s4a_email = s4a_user.Email 
+        github_user = cached_github.get_user_from_email(github, s4a_email)
+        if not github_user:
+            continue
+        github_login = github_user.login
+        files = cached_github.get_streamlit_files(github, github_login)
+        results['email'].append(s4a_email)
+        results['login'].append(github_login)
+        results['streamlit_files'].append(len(files))
+    results = pd.DataFrame(results)
+    return results
+
+
 token_name, user_table, github = get_config()
 user_table = filter_user_table(user_table)
 
@@ -91,26 +120,9 @@ user_table
 start_user, end_user = st.slider('User range', 0, len(user_table), (0,1))
 n_users = end_user - start_user
 user_range = itertools.islice(user_table.itertuples(), start_user, end_user)
+results = get_streamlit_files(github, user_table,
+    start_user, end_user)
 
-# Create the progress bar
-bar = st.progress(0)
-status_text = st.empty()
-
-# Run the iteration
-results = {'email': [], 'login': [], 'streamlit_files': []}
-for i, s4a_user in enumerate(user_range):
-    # Update the status
-    bar.progress((i + 1) / n_users)
-    status_text.text(f'{i+1} / {n_users} ({(i+1) * 100.0 / n_users : 3.1f}%)')
-
-    # Figure out how many Streamlit files this user has.
-    s4a_email = s4a_user.Email 
-    github_user = cached_github.get_user_from_email(github, s4a_email)
-    if not github_user:
-        continue
-    github_login = github_user.login
-    files = cached_github.get_streamlit_files(github, github_login)
-    results['email'].append(s4a_email)
-    results['login'].append(github_login)
-    results['streamlit_files'].append(len(files))
-st.write(pd.DataFrame(results))
+# Show the results
+'## Results'
+results

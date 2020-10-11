@@ -33,7 +33,7 @@ def _hash_github_object(github):
 # Ignore the github objects
 _hash_github_object = lambda _: None
 
-_GITHUB_HASH_FUNCS = {
+GITHUB_HASH_FUNCS = {
     GithubMainClass.Github: _hash_github_object, 
     NamedUser.NamedUser: _get_attr_func('login'),
     ContentFile.ContentFile: _get_attr_func('download_url'),
@@ -61,14 +61,14 @@ def rate_limit(func):
     return wrapped_func
 
 @rate_limit
-@st.cache(hash_funcs=_GITHUB_HASH_FUNCS, persist=True)
+@st.cache(hash_funcs=GITHUB_HASH_FUNCS, persist=True)
 def from_access_token(access_token):
     github = Github(access_token)
     github._access_token = access_token
     return github
 
 @rate_limit
-@st.cache(hash_funcs=_GITHUB_HASH_FUNCS, persist=True)
+@st.cache(hash_funcs=GITHUB_HASH_FUNCS, persist=True)
 def get_user_from_email(github, email):
     """Returns a user for that email or None."""
     users = list(github.search_users(f'type:user {email} in:email'))
@@ -80,7 +80,7 @@ def get_user_from_email(github, email):
         raise RuntimeError(f'{email} associated with {len(users)} users.')
 
 @rate_limit
-@st.cache(hash_funcs=_GITHUB_HASH_FUNCS, persist=True)
+@st.cache(hash_funcs=GITHUB_HASH_FUNCS, persist=True)
 def get_streamlit_files(github, github_login):
     try:
         SEARCH_QUERY = 'extension:py "import streamlit as st" user:'
