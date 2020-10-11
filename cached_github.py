@@ -30,6 +30,9 @@ def _hash_github_object(github):
     hasher.update(github._access_token.encode('utf-8'))
     return hasher.digest()
 
+# Ignore the github objects
+_hash_github_object = lambda _: None
+
 _GITHUB_HASH_FUNCS = {
     GithubMainClass.Github: _hash_github_object, 
     NamedUser.NamedUser: _get_attr_func('login'),

@@ -43,7 +43,7 @@ def get_zip_file():
     zip_filenames = [f for f in os.listdir('.') if f.endswith('.zip')]
     if zip_filenames:
         # Even if there are local files, give the option to upload.
-        zip_filenames = [UPLOAD_FILE] + zip_filenames
+        zip_filenames = zip_filenames + [UPLOAD_FILE]
         zip_filename = st.sidebar.selectbox('Select zip file', zip_filenames)
     else:
         # If no local zip files, then you must upload.
