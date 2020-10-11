@@ -35,13 +35,9 @@ _GITHUB_HASH_FUNCS = {
     ContentFile.ContentFile: _get_attr_func('download_url'),
 }
 
-def rate_limited_and_cached(func=None, **st_cache_args):
+def rate_limit(func):
     """Function decorator to try to handle Github search rate limits.
     See: https://developer.github.com/v3/search/#rate-limit"""
-    MAX_WAIT_SECONDS = 60.0
-
-    if func == None:
-        return lambda f: rate_limited_and_cached(func=f, **st_cache_args)
 
     @functools.wraps(func)
     def wrapped_func(github, *args, **kwargs):
@@ -50,6 +46,7 @@ def rate_limited_and_cached(func=None, **st_cache_args):
         except RateLimitExceededException:
             # We were rate limited by Github, Figure out how long to wait.
             # Round up, and wait that long.
+            MAX_WAIT_SECONDS = 60.0
             search_limit = github.get_rate_limit().search
             remaining = search_limit.reset - datetime.utcnow()
             wait_seconds = math.ceil(remaining.total_seconds() + 1.0)
@@ -57,19 +54,17 @@ def rate_limited_and_cached(func=None, **st_cache_args):
             with st.spinner(f'Waiting {wait_seconds}s to avoid rate limit.'):
                 time.sleep(wait_seconds)
             return func(github, *args, **kwargs)
-    return st.cache(
-        wrapped_func,
-        hash_funcs=_GITHUB_HASH_FUNCS,
-        persist=True,
-        **st_cache_args)
+    return wrapped_func
 
-@rate_limited_and_cached
+@rate_limit
+@st.cache(hash_funcs=_GITHUB_HASH_FUNCS, persist=True)
 def from_access_token(access_token):
     github = Github(access_token)
     github._access_token = access_token
     return github
 
-@rate_limited_and_cached
+@rate_limit
+@st.cache(hash_funcs=_GITHUB_HASH_FUNCS, persist=True)
 def get_user_from_email(github, email):
     """Returns a user for that email or None."""
     users = list(github.search_users(f'type:user {email} in:email'))
@@ -80,7 +75,8 @@ def get_user_from_email(github, email):
     else:
         raise RuntimeError(f'{email} associated with {len(users)} users.')
 
-@rate_limited_and_cached
+@rate_limit
+@st.cache(hash_funcs=_GITHUB_HASH_FUNCS, persist=True)
 def get_streamlit_files(github, github_login):
     SEARCH_QUERY = 'extension:py "import streamlit as st" user:'
     files = github.search_code(SEARCH_QUERY + github_login)

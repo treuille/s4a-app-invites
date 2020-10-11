@@ -56,7 +56,7 @@ filtered_users = user_table[user_table['Status'] == status]
 filtered_users = filtered_users.sort_values(by='Applied At', ascending=True)
 filtered_users, len(filtered_users)
 results = {'email': [], 'login': [], 'streamlit_files': []}
-MAX_ITER = 400
+MAX_ITER = 10000
 st.success(f'Will halt after `{MAX_ITER}` iterations.')
 for i, s4a_user in enumerate(filtered_users.itertuples()):
     s4a_email = s4a_user.Email 
