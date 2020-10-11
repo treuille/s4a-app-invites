@@ -31,7 +31,7 @@ def get_config():
     github = cached_github.from_access_token(access_token)
     return user_table, github
 
-@st.cache
+# @st.cache
 def extract_csv_from_zip_file(raw_input):
     with zipfile.ZipFile(raw_input) as zip_input:
         names = zip_input.namelist()
@@ -56,16 +56,18 @@ filtered_users = user_table[user_table['Status'] == status]
 filtered_users = filtered_users.sort_values(by='Applied At', ascending=True)
 filtered_users, len(filtered_users)
 results = {'email': [], 'login': [], 'streamlit_files': []}
-MAX_ITER = 10000
+MAX_ITER = st.slider('Max iterations', 1, 3000, 1)
 st.success(f'Will halt after `{MAX_ITER}` iterations.')
 for i, s4a_user in enumerate(filtered_users.itertuples()):
+    if i >= MAX_ITER:
+        break
     s4a_email = s4a_user.Email 
     github_user = cached_github.get_user_from_email(github, s4a_email)
+    f'### {i}'
+    f'`{s4a_user.Email}` -> `{github_user}`'
     if not github_user:
         continue
     github_login = github_user.login
-    f'### {i}'
-    f'email: `{s4a_user.Email}`'
     f'twitter_username: `{github_user.twitter_username}`'
     f'created_at: `{github_user.created_at}`'
     f'name: `{github_user.name}`'
@@ -79,6 +81,4 @@ for i, s4a_user in enumerate(filtered_users.itertuples()):
     results['email'].append(s4a_email)
     results['login'].append(github_login)
     results['streamlit_files'].append(len(files))
-    if i >= MAX_ITER:
-        break
 st.write(pd.DataFrame(results))
