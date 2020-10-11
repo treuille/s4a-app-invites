@@ -20,17 +20,20 @@ def get_config():
     # Get input
     zip_file = get_zip_file()
     access_token = st.sidebar.text_input("Github access token", type="password")
+    token_name = st.sidebar.text_input("Token name")
 
     # Check for input
     if not zip_file:
         err('Please upload a user file. Ask TC for the file.')
     if not access_token:
         err('Please enter a github access token.')
+    if not token_name:
+        err('Please name this token.')
 
     # Parse and return the information
     user_table = extract_csv_from_zip_file(zip_file)
     github = cached_github.from_access_token(access_token)
-    return user_table, github
+    return token_name, user_table, github
 
 def get_zip_file():
     """Return a zip file object, either from the current directory or uploaded."""
@@ -71,8 +74,14 @@ def filter_user_table(user_table):
         user_table = user_table[user_table.Status != exclude_status]
     return user_table
 
-user_table, github = get_config()
+token_name, user_table, github = get_config()
 user_table = filter_user_table(user_table)
+
+f"""
+## Config
+- **Token name:** `{token_name}`
+- **Port:** `{st.get_option('server.port')}`
+"""
 
 '## Users'
 user_table
