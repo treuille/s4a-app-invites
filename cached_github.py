@@ -10,6 +10,7 @@ from github import Github
 from github import NamedUser
 from github import ContentFile
 from github import RateLimitExceededException
+from github import GithubException
 from github import MainClass as GithubMainClass
 
 
@@ -78,7 +79,13 @@ def get_user_from_email(github, email):
 @rate_limit
 @st.cache(hash_funcs=_GITHUB_HASH_FUNCS, persist=True)
 def get_streamlit_files(github, github_login):
-    SEARCH_QUERY = 'extension:py "import streamlit as st" user:'
-    files = github.search_code(SEARCH_QUERY + github_login)
-    return list(files)
-
+    try:
+        SEARCH_QUERY = 'extension:py "import streamlit as st" user:'
+        files = github.search_code(SEARCH_QUERY + github_login)
+        return list(files)
+    except RateLimitExceededException:
+        raise
+    except GithubException as e:
+        st.write(e) 
+        st.write(dir(e))
+        raise

@@ -81,8 +81,11 @@ user_table
 results = {'email': [], 'login': [], 'streamlit_files': []}
 n_iters = st.slider('Max iterations', 1, len(user_table), 1)
 bar = st.progress(0)
+status_text = st.empty()
 for i, s4a_user in itertools.islice(enumerate(user_table.itertuples()), n_iters):
+    # Update the status
     bar.progress((i + 1) / n_iters)
+    status_text.text(f'{i+1} / {n_iters} ({(i+1) * 100.0 / n_iters : 3.1f}%)')
     s4a_email = s4a_user.Email 
     github_user = cached_github.get_user_from_email(github, s4a_email)
     if not github_user:
