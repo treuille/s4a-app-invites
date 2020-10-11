@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import zipfile
 import os
+import itertools
 
 "# S4A App Explorer"
 
@@ -64,44 +65,30 @@ def extract_csv_from_zip_file(zip_file):
         with zip_input.open(names[0]) as csv_input:
             return pd.read_csv(csv_input)
 
+def filter_user_table(user_table):
+    """Filter out users by status."""
+    for exclude_status in {'suspended', 'invited'}:
+        user_table = user_table[user_table.Status != exclude_status]
+    return user_table
 
 user_table, github = get_config()
-# f'rate_limit {type(rate_limit)}
-# st.write(rate_limit)
-# st.write(dir(rate_limit))
-# st.write(rate_limit.raw_headers)
-# st.write('search_limit', type(search_limit))
-# st.write(dir(search_limit))
-# f'remaining: `{search_limit.remaining}`'
-# raise RuntimeError('Stop here.')
+user_table = filter_user_table(user_table)
 
-status = st.selectbox('Status', list(set(user_table['Status'])))
-filtered_users = user_table[user_table['Status'] == status]
-filtered_users = filtered_users.sort_values(by='Applied At', ascending=True)
-filtered_users, len(filtered_users)
+'## Users'
+user_table
+
+'## Files / User'
 results = {'email': [], 'login': [], 'streamlit_files': []}
-MAX_ITER = st.slider('Max iterations', 1, 3000, 1)
-st.success(f'Will halt after `{MAX_ITER}` iterations.')
-for i, s4a_user in enumerate(filtered_users.itertuples()):
-    if i >= MAX_ITER:
-        break
+n_iters = st.slider('Max iterations', 1, len(user_table), 1)
+bar = st.progress(0)
+for i, s4a_user in itertools.islice(enumerate(user_table.itertuples()), n_iters):
+    bar.progress((i + 1) / n_iters)
     s4a_email = s4a_user.Email 
     github_user = cached_github.get_user_from_email(github, s4a_email)
-    f'### {i}'
-    f'`{s4a_user.Email}` -> `{github_user}`'
     if not github_user:
         continue
     github_login = github_user.login
-    f'twitter_username: `{github_user.twitter_username}`'
-    f'created_at: `{github_user.created_at}`'
-    f'name: `{github_user.name}`'
-    f'login: `{github_login}`'
     files = cached_github.get_streamlit_files(github, github_login)
-    if len(files) > 1000:
-        st.write(files)
-        st.write(files[0].download_url)
-        raise RuntimeError('Checking types.')
-    f'num files: `{len(files)}`'
     results['email'].append(s4a_email)
     results['login'].append(github_login)
     results['streamlit_files'].append(len(files))
