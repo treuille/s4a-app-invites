@@ -86,15 +86,22 @@ f"""
 '## Users'
 user_table
 
+# Get the iteration range
 '## Files / User'
-results = {'email': [], 'login': [], 'streamlit_files': []}
-n_iters = st.slider('Max iterations', 1, len(user_table), 1)
+start_user, end_user = st.slider('User range', 0, len(user_table), (0,1))
+n_users = end_user - start_user
+user_range = itertools.islice(user_table.itertuples(), start_user, end_user)
+
+# Create the progress bar
 bar = st.progress(0)
 status_text = st.empty()
-for i, s4a_user in itertools.islice(enumerate(user_table.itertuples()), n_iters):
+
+# Run the iteration
+results = {'email': [], 'login': [], 'streamlit_files': []}
+for i, s4a_user in enumerate(user_range):
     # Update the status
-    bar.progress((i + 1) / n_iters)
-    status_text.text(f'{i+1} / {n_iters} ({(i+1) * 100.0 / n_iters : 3.1f}%)')
+    bar.progress((i + 1) / n_users)
+    status_text.text(f'{i+1} / {n_users} ({(i+1) * 100.0 / n_users : 3.1f}%)')
 
     # Figure out how many Streamlit files this user has.
     s4a_email = s4a_user.Email 
