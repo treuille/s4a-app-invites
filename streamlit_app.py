@@ -87,10 +87,6 @@ for i, s4a_user in itertools.islice(enumerate(user_table.itertuples()), n_iters)
     bar.progress((i + 1) / n_iters)
     status_text.text(f'{i+1} / {n_iters} ({(i+1) * 100.0 / n_iters : 3.1f}%)')
 
-    # Short curcuit the beginning
-    if i < 480:
-        continue
-    
     # Figure out how many Streamlit files this user has.
     s4a_email = s4a_user.Email 
     github_user = cached_github.get_user_from_email(github, s4a_email)
