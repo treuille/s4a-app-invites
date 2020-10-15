@@ -4,6 +4,7 @@ import pandas as pd
 import zipfile
 import os
 import itertools
+import base64
 
 "# S4A App Explorer"
 
@@ -102,6 +103,12 @@ def get_streamlit_files(github, user_table, start_user, end_user):
     results = pd.DataFrame(results)
     return results
 
+def csv_download_link(df, filename):
+    """Returns a link to download the dataframe as the given filename."""
+    csv = df.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()
+    href = f'data:file/csv;base64,{b64}'
+    return f'<a href="{href}" download="{filename}">`{filename}`</a>'
 
 token_name, user_table, github = get_config()
 user_table = filter_user_table(user_table)
@@ -122,7 +129,12 @@ n_users = end_user - start_user
 user_range = itertools.islice(user_table.itertuples(), start_user, end_user)
 results = get_streamlit_files(github, user_table,
     start_user, end_user)
+results = results.sort_values(by=['streamlit_files'], ascending=False)
 
 # Show the results
 '## Results'
 results
+f'`{len(results)}` total'
+download_link = csv_download_link(results, 'streamlit_users.csv')
+st.text(download_link)
+st.markdown("Dowload results here: " + download_link, unsafe_allow_html=True)
