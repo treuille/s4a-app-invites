@@ -55,7 +55,7 @@ def get_zip_file():
 
     # Now open the file, either locally or with an uploader.
     if zip_filename == UPLOAD_FILE:
-        zip_file = st.sidebar.file_uploader('User list zip file.', types='zip')
+        zip_file = st.sidebar.file_uploader('User list zip file.', type='zip')
     else:
         zip_file = open(zip_filename, 'rb')
     return zip_file
